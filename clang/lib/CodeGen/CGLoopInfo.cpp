@@ -433,6 +433,10 @@ MDNode *LoopInfo::createMetadata(
     LoopProperties.push_back(
         MDNode::get(Ctx, MDString::get(Ctx, "llvm.loop.mustprogress")));
 
+  if (Attrs.CGRAAcc)
+    LoopProperties.push_back(
+        MDNode::get(Ctx, MDString::get(Ctx, "llvm.loop.cgra.acc")));
+
   assert(!!AccGroup == Attrs.IsParallel &&
          "There must be an access group iff the loop is parallel");
   if (Attrs.IsParallel) {
@@ -461,7 +465,8 @@ LoopAttributes::LoopAttributes(bool IsParallel)
       VectorizeScalable(LoopAttributes::Unspecified), InterleaveCount(0),
       UnrollCount(0), UnrollAndJamCount(0),
       DistributeEnable(LoopAttributes::Unspecified), PipelineDisabled(false),
-      PipelineInitiationInterval(0), CodeAlign(0), MustProgress(false) {}
+      PipelineInitiationInterval(0), CodeAlign(0), MustProgress(false),
+      CGRAAcc(false) {}
 
 void LoopAttributes::clear() {
   IsParallel = false;
@@ -479,6 +484,9 @@ void LoopAttributes::clear() {
   PipelineInitiationInterval = 0;
   CodeAlign = 0;
   MustProgress = false;
+
+  // CGRA attributes
+  CGRAAcc = false;
 }
 
 LoopInfo::LoopInfo(BasicBlock *Header, const LoopAttributes &Attrs,
@@ -503,7 +511,8 @@ LoopInfo::LoopInfo(BasicBlock *Header, const LoopAttributes &Attrs,
       Attrs.UnrollEnable == LoopAttributes::Unspecified &&
       Attrs.UnrollAndJamEnable == LoopAttributes::Unspecified &&
       Attrs.DistributeEnable == LoopAttributes::Unspecified &&
-      Attrs.CodeAlign == 0 && !StartLoc && !EndLoc && !Attrs.MustProgress)
+      Attrs.CodeAlign == 0 && !StartLoc && !EndLoc && !Attrs.MustProgress &&
+      !Attrs.CGRAAcc)
     return;
 
   TempLoopID = MDNode::getTemporary(Header->getContext(), std::nullopt);
@@ -826,6 +835,12 @@ void LoopInfoStack::push(BasicBlock *Header, clang::ASTContext &Ctx,
         (StagedAttrs.UnrollEnable == LoopAttributes::Unspecified &&
          StagedAttrs.UnrollCount == 0))
       setUnrollState(LoopAttributes::Disable);
+
+  for (const auto *Attr : Attrs) {
+    if (auto CA = dyn_cast<CGRAAccAttr>(Attr) && !getCGRAAcc()) {
+      setCGRAAcc(LoopAttributes::Enable);
+    }
+  }
 
   /// Stage the attributes.
   push(Header, StartLoc, EndLoc);

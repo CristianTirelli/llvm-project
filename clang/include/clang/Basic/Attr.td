@@ -776,6 +776,20 @@ class IgnoredAttr : Attr {
 // Attributes begin here
 //
 
+def CGRAAcc : Attr {
+  /// #pragma cgra acc
+  let Spellings = [Pragma<"cgra", "acc">];
+  let Args = [StringArgument<"Key">, VariadicExprArgument<"Value">];
+
+  let AdditionalMembers = [{
+    void printPrettyPragma(raw_ostream & OS, const PrintingPolicy &Policy) const {
+      return ;
+    }
+  }];
+
+  let Documentation = [Undocumented];
+}
+
 def AbiTag : Attr {
   let Spellings = [GCC<"abi_tag", /*AllowInC*/0>];
   let Args = [VariadicStringArgument<"Tags">];

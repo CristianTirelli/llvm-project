@@ -290,11 +290,18 @@ struct PragmaLoopHintHandler : public PragmaHandler {
                     Token &FirstToken) override;
 };
 
+struct PragmaCGRAHandler : public PragmaHandler {
+  PragmaCGRAHandler() : PragmaHandler("cgra") {}
+  void HandlePragma(Preprocessor &PP, PragmaIntroducer Introducer,
+                    Token &FirstToken) override;
+};
+
 struct PragmaUnrollHintHandler : public PragmaHandler {
   PragmaUnrollHintHandler(const char *name) : PragmaHandler(name) {}
   void HandlePragma(Preprocessor &PP, PragmaIntroducer Introducer,
                     Token &FirstToken) override;
 };
+
 
 struct PragmaMSRuntimeChecksHandler : public EmptyPragmaHandler {
   PragmaMSRuntimeChecksHandler() : EmptyPragmaHandler("runtime_checks") {}
@@ -539,6 +546,9 @@ void Parser::initializePragmaHandlers() {
   PP.AddPragmaHandler(UnrollHintHandler.get());
   PP.AddPragmaHandler("GCC", UnrollHintHandler.get());
 
+  CGRAHandler = std::make_unique<PragmaCGRAHandler>();
+  PP.AddPragmaHandler(CGRAHandler.get());
+
   NoUnrollHintHandler = std::make_unique<PragmaUnrollHintHandler>("nounroll");
   PP.AddPragmaHandler(NoUnrollHintHandler.get());
   PP.AddPragmaHandler("GCC", NoUnrollHintHandler.get());
@@ -679,6 +689,9 @@ void Parser::resetPragmaHandlers() {
   PP.RemovePragmaHandler(NoUnrollHintHandler.get());
   PP.RemovePragmaHandler("GCC", NoUnrollHintHandler.get());
   NoUnrollHintHandler.reset();
+
+  PP.RemovePragmaHandler(CGRAHandler.get());
+  CGRAHandler.reset();
 
   PP.RemovePragmaHandler(UnrollAndJamHintHandler.get());
   UnrollAndJamHintHandler.reset();
@@ -1608,6 +1621,42 @@ bool Parser::HandlePragmaLoopHint(LoopHint &Hint) {
   Hint.Range = SourceRange(Info->PragmaName.getLocation(),
                            Info->Toks.back().getLocation());
   return true;
+}
+
+bool Parser::HandlePragmaCGRAHint(LoopHint &Hint) {
+  assert(Tok.is(tok::annot_pragma_loop_cgra));
+  PragmaLoopHintInfo *Info =
+  static_cast<PragmaLoopHintInfo *>(Tok.getAnnotationValue());
+
+  IdentifierInfo *PragmaNameInfo = Info->PragmaName.getIdentifierInfo();
+  Hint.PragmaNameLoc = IdentifierLoc::create(
+      Actions.Context, Info->PragmaName.getLocation(), PragmaNameInfo);
+
+  // It is possible that the loop hint has no option identifier, such as
+  // #pragma unroll(4).
+  IdentifierInfo *OptionInfo = Info->Option.is(tok::identifier)
+                                   ? Info->Option.getIdentifierInfo()
+                                   : nullptr;
+  Hint.OptionLoc = IdentifierLoc::create(
+      Actions.Context, Info->Option.getLocation(), OptionInfo);
+
+  llvm::ArrayRef<Token> Toks = Info->Toks;
+
+  // Return a valid hint if pragma unroll or nounroll were specified
+  // without an argument.
+  auto IsLoopHint = llvm::StringSwitch<bool>(PragmaNameInfo->getName())
+                        .Case("acc", true)
+                        .Default(false);
+  
+  if (Toks.empty() && IsLoopHint) {
+    ConsumeAnnotationToken();
+    Hint.Range = Info->PragmaName.getLocation();
+    return true;
+  }
+
+
+  return false;
+
 }
 
 namespace {
@@ -3100,8 +3149,60 @@ void PragmaFloatControlHandler::HandlePragma(Preprocessor &PP,
   // the high 16 bits then union with the Kind.
   TokenArray[0].setAnnotationValue(reinterpret_cast<void *>(
       static_cast<uintptr_t>((Action << 16) | (Kind & 0xFFFF))));
+    PP.EnterTokenStream(std::move(TokenArray), 1,
+                      /*DisableMacroExpansion=*/false, /*IsReinject=*/false);
+}
+
+void PragmaCGRAHandler::HandlePragma(Preprocessor &PP,
+                                     PragmaIntroducer Introducer,
+                                     Token &Tok) {
+
+  PP.Lex(Tok);
+  Token PragmaName = Tok;
+  auto *Info = new (PP.getPreprocessorAllocator()) PragmaLoopHintInfo;
+
+  auto *Str = Tok.getIdentifierInfo();
+  // Get next token
+  if( !Str->isStr("acc")){
+    PP.Diag(Tok.getLocation(), diag::warn_pragma_loop_cgra_args) << tok::identifier; 
+    return;
+  }
+
+  // Consume acc token
+  PP.Lex(Tok);
+
+  // EOD
+  if (Tok.isNot(tok::eod)) {
+    PP.Diag(Tok.getLocation(), diag::warn_pragma_loop_cgra_args) << tok::identifier;
+    return;
+  }
+
+  Token nextToken = PP.LookAhead(0);
+  if(nextToken.isNot(tok::kw_for) && nextToken.isNot(tok::kw_while) && nextToken.isNot(tok::kw_do)){
+    PP.Diag(nextToken.getLocation(), diag::warn_pragma_loop_cgra);
+    return;
+  }
+  
+
+  if (Tok.is(tok::eod)) {
+    // nounroll or unroll pragma without an argument.
+    Info->PragmaName = PragmaName;
+    Info->Option.startToken();
+  } 
+
+
+  // Generate the hint token.
+  auto TokenArray = std::make_unique<Token[]>(1);
+  TokenArray[0].startToken();
+  TokenArray[0].setKind(tok::annot_pragma_loop_cgra);
+  TokenArray[0].setLocation(Introducer.Loc);
+  TokenArray[0].setAnnotationEndLoc(PragmaName.getLocation());
+  TokenArray[0].setAnnotationValue(static_cast<void *>(Info));
   PP.EnterTokenStream(std::move(TokenArray), 1,
                       /*DisableMacroExpansion=*/false, /*IsReinject=*/false);
+
+
+  return;
 }
 
 /// Handle the Microsoft \#pragma detect_mismatch extension.

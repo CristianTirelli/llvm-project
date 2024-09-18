@@ -1203,7 +1203,10 @@ def warn_pragma_missing_argument : Warning<
   "missing argument to '#pragma %0'%select{|; expected %2}1">, InGroup<IgnoredPragmas>;
 def warn_pragma_invalid_argument : Warning<
   "unexpected argument '%0' to '#pragma %1'%select{|; expected %3}2">, InGroup<IgnoredPragmas>;
-
+def warn_pragma_loop_cgra : Warning<
+  "missing 'for' after '#pragma cgra' - ignoring loop selection">, InGroup<IgnoredPragmas>;
+def warn_pragma_loop_cgra_args : Warning<
+  "unexpected argument '%0' after '#pragma cgra' - ignoring loop selection">, InGroup<IgnoredPragmas>;
 def err_pragma_misplaced_in_decl : Error<"this pragma cannot appear in %0 declaration">;
 
 // '#pragma clang section' related errors

@@ -84,6 +84,8 @@ struct LoopAttributes {
 
   /// Value for whether the loop is required to make progress.
   bool MustProgress;
+
+  bool CGRAAcc;
 };
 
 /// Information used when generating a structured loop.
@@ -300,6 +302,10 @@ public:
   /// Return the LoopInfo for the current loop. HasInfo should be called
   /// first to ensure LoopInfo is present.
   const LoopInfo &getInfo() const { return *Active.back(); }
+
+  void setCGRAAcc(bool Enable = true) { StagedAttrs.CGRAAcc = Enable; }
+
+  bool getCGRAAcc() { return StagedAttrs.CGRAAcc; }
 
 private:
   /// The set of attributes that will be applied to the next pushed loop.
