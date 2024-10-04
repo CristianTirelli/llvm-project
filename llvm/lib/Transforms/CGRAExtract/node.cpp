@@ -1,86 +1,156 @@
 #include "llvm/Transforms/CGRAExtract/node.h"
 
-/************************************ NODE ************************************/
-node::node(int id, std::string name, llvm::Value* inst)
-{	
-	this->id = id;
-	this->name = name;
-	this->inst = inst;
-    
-	instruction_name = "None";
-    l_op = nullptr;
-    r_op = nullptr;
-	predicate = nullptr;
-	opcode = -10;
+// Instruction node
+
+instructionNode::instructionNode(int id, llvm::Value *llvm_instruction)
+    : node(id, nodeType::INSTRUCTION), llvm_instruction(llvm_instruction) {
+
+  // this->id = id;
+  // this->type = nodeType::INSTRUCTION;
+
+  // this->llvm_instruction = llvm_instruction;
+
+  this->opcode = -1;
+  this->instruction_name = "";
+
+  this->left_operand = nullptr;
+  this->right_operand = nullptr;
+  this->predicate_operand = nullptr;
 }
 
-node::~node()
-{
-    operands.clear();
+std::string instructionNode::dump() const {
+
+  return "Instruction Id: " + std::to_string(id) +
+         " name: " + instruction_name + " opcode: " + std::to_string(opcode) +
+         "\nLeft Operand: \n\t" + left_operand->dump() + "Rigth Operand: \n\t" +
+         right_operand->dump() + "Predicate Operand: \n\t" +
+         predicate_operand->dump();
 }
 
-/******************* GET *******************/
-
-llvm::Value *node::getInstruction(){
-	return inst;
+void instructionNode::setLeftOperand(node *operand) {
+  this->left_operand = operand;
 }
 
-std::string node::getName(){
-	return name;
+void instructionNode::setRightOperand(node *operand) {
+  this->right_operand = operand;
 }
 
-int node::getId(){
-	return id;
+void instructionNode::setPredicateOperand(node *operand) {
+  this->predicate_operand = operand;
 }
 
-std::string node::getInstructionName(){
-	return instruction_name;
+void instructionNode::setInstructionName(std::string name) {
+  this->instruction_name = name;
 }
 
-node* node::getPredicate(){
-	return predicate;
+void instructionNode::setValue(llvm::Value *llvm_value) {
+  this->llvm_instruction = llvm_value;
 }
 
-node* node::getLOp(){
-	return l_op;
+void instructionNode::setOpcode(int op) { this->opcode = op; }
+
+node *instructionNode::getLeftOperand() { return this->left_operand; }
+
+node *instructionNode::getRightOperand() { return this->right_operand; }
+
+node *instructionNode::getPredicateOperand() { return this->predicate_operand; }
+
+std::string instructionNode::getInstructionName() {
+  return this->instruction_name;
 }
 
-node* node::getROp(){
-	return r_op;
+llvm::Value *instructionNode::getValue() { return this->llvm_instruction; }
+
+int instructionNode::getOpcode() { return this->opcode; }
+
+// Constant node
+
+constantNode::constantNode(int id, int immediate)
+    : node(id, nodeType::CONSTANT), immediate(immediate) {
+
+  this->immediate_position = 0;
 }
 
-int node::getOpcode(){
-	return opcode;
+std::string constantNode::dump() const {
+  return "Constant Id: " + std::to_string(id) +
+         " immediate: " + std::to_string(immediate) +
+         " pos: " + std::to_string(immediate_position) + "\n";
 }
 
-/******************* SET *******************/
+void constantNode::setImmediate(int value) { this->immediate = value; }
 
-void node::setLOp(node* op){
-	l_op = op;
+void constantNode::setImmediatePosition(int pos) {
+  this->immediate_position = pos;
 }
 
-void node::setROp(node* op){
-	r_op = op;
+int constantNode::getImmediate() { return this->immediate; }
+
+int constantNode::getImmediatePosition() { return this->immediate_position; }
+
+// Live In node
+
+liveInNode::liveInNode(int id, llvm::Value *llvm_instruction)
+    : node(id, nodeType::LIVE_IN), llvm_instruction(llvm_instruction) {
+
+  this->id = id;
+  this->type = nodeType::LIVE_IN;
+
+  this->llvm_instruction = llvm_instruction;
+
+  this->opcode = LWD;
 }
 
-void node::setPredicate(node* p){
-	predicate = p;
+std::string liveInNode::dump() const {
+  return "Live In Id: " + std::to_string(id) + " name: " + instruction_name +
+         "\n";
 }
 
-void node::setName(std::string n){
-	name = n;
+void liveInNode::setLiveInName(std::string name) {
+  this->instruction_name = name;
 }
 
-void node::setInstructionName(std::string name){
-	instruction_name = name;
+void liveInNode::setValue(llvm::Value *llvm_instruction) {
+  this->llvm_instruction = llvm_instruction;
 }
 
-void node::setOpcode(int op){
-	opcode = op;
+void liveInNode::setOpcode(int opcode) { this->opcode = opcode; }
+
+std::string liveInNode::getLiveInName() { return this->instruction_name; }
+
+llvm::Value *liveInNode::getValue() { return this->llvm_instruction; }
+
+int liveInNode::getOpcode() { return this->opcode; }
+
+// Live Out node
+
+liveOutNode::liveOutNode(int id, llvm::Value *llvm_instruction)
+    : node(id, nodeType::LIVE_OUT), llvm_instruction(llvm_instruction) {
+
+  this->id = id;
+  this->type = nodeType::LIVE_OUT;
+
+  this->llvm_instruction = llvm_instruction;
+
+  this->opcode = SWD;
 }
 
-void node::swapOperands(){
-	node *tmp = l_op;
-	l_op = r_op;
-	r_op = tmp;
+std::string liveOutNode::dump() const {
+  return "Live Out Id: " + std::to_string(id) + " name: " + instruction_name +
+         "\n";
 }
+
+void liveOutNode::setLiveOutName(std::string name) {
+  this->instruction_name = name;
+}
+
+void liveOutNode::setValue(llvm::Value *llvm_instruction) {
+  this->llvm_instruction = llvm_instruction;
+}
+
+void liveOutNode::setOpcode(int opcode) { this->opcode = opcode; }
+
+std::string liveOutNode::getLiveOutName() { return this->instruction_name; }
+
+llvm::Value *liveOutNode::getValue() { return this->llvm_instruction; }
+
+int liveOutNode::getOpcode() { return this->opcode; }

@@ -1,72 +1,57 @@
 #ifndef LLVM_TRANSFORMS_CGRAEXTRACT_GRAPH_H
 #define LLVM_TRANSFORMS_CGRAEXTRACT_GRAPH_H
 
-#include <fstream> 
+#include <fstream>
 
-#include "llvm/IR/Value.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/Value.h"
 
-#include "node.h"
 #include "edge.h"
+#include "node.h"
 #include "utility.h"
+#include <variant>
 
+namespace llvm {
 
+class graph {
 
+  std::vector<node *> nodes;
+  std::vector<Edge *> edges;
 
-namespace llvm{
+public:
+  graph();
+  virtual ~graph();
 
-	class graph{
+  /******************* ADD *******************/
 
-		std::vector<node *> nodes;
-		std::vector<edge *> edges;
-		std::vector<constant* > constants;
-		std::vector<node *> livein;
-		std::vector<node *> liveout;
-		std::vector<edge *> liveinedges;
-		std::vector<edge *> liveoutedges;
-		
-		
-	public:
+  void addNode(node *n);
+  void addEdge(Edge *e);
 
-		graph();
-		virtual ~graph();
+  /******************* GET *******************/
+  node *getNode(Instruction *n);
+  std::vector<node *> getNodes();
+  std::vector<Edge *> getEdges();
+  std::vector<Edge *> getAssociateEdges(node *n);
 
-        /******************* ADD *******************/
-		void addNode(node *n);
-		void addEdge(edge* e);
-		void addConstant(constant *c);
-		void addLiveInNode(node* n);
-		void addLiveOutNode(node* n);
-		void addLiveInEdge(edge* e);
-		void addLiveOutEdge(edge* e);
+  std::vector<instructionNode *> getInstructionNodes();
+  std::vector<liveInNode *> getLiveInNodes();
+  std::vector<liveOutNode *> getLiveOutNodes();
+  std::vector<constantNode *> getConstantNodes();
 
-		/******************* GET *******************/
-		node* getNode(Instruction* n);
-		std::vector<node *> getNodes();
-		std::vector<edge *> getEdges();
-		std::vector<edge *> getAssociateEdges(node* n);
-		std::vector<node *> getLiveInNodes();
-		std::vector<node *> getLiveOutNodes();
-		std::vector<constant *> getConstants();
-		std::vector<node *> getSuccessors(node* n);
-		std::vector<node *> getPredecessors(node* n);
+  std::vector<node *> getSuccessors(node *n);
+  std::vector<node *> getPredecessors(node *n);
 
-		/******************* RMV *******************/
-		void removeNode(node *n);
-		void removeEdge(node *n);
+  /******************* RMV *******************/
+  void removeNode(node *n);
+  void removeEdge(node *n);
 
-		/******************* PRINT *******************/
-		void printDot(std::string filename);
-		void printNodes(std::string filename);
-		void printEdges(std::string filename);
-		void printConstants(std::string filename);
-        void printLiveInNodes(std::string filename);
-        void printLiveOutNodes(std::string filename);
-		void printLiveInEdges(std::string filename);
-		void printLiveOutEdges(std::string filename);
-	};
+  /******************* PRINT *******************/
+  void printDot(std::string filename);
+  void printNodes(std::string filename);
+  void printEdges(std::string filename);
+};
 
-}
+} // namespace llvm
 
-#endif //LLVM_TRANSFORMS_CGRAEXTRACT_GRAPH_H
+#endif // LLVM_TRANSFORMS_CGRAEXTRACT_GRAPH_H

@@ -35,7 +35,6 @@
 #define SWIPI 33
 #define NOP 34
 
-
 #define MV 40
 #define BLE 41
 #define BGT 42

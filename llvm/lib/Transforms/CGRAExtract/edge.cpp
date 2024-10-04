@@ -1,57 +1,26 @@
 #include "llvm/Transforms/CGRAExtract/edge.h"
 
-/************************************* EDGE *************************************/
-edge::edge(int id, node* from, node* to, int distance, int latency)
-{
-	this->id = id;
-	this->to = to;
-  	this->from = from;
-	this->distance = distance;
-    this->latency = latency;
+// Constructor implementation
+Edge::Edge(int id, node *source, node *destination, int distance, int latency)
+    : id(id), source(source), destination(destination), distance(distance),
+      latency(latency) {}
 
-}
+Edge::~Edge() {}
 
-edge::~edge()
-{
-	
-}
+int Edge::getId() { return id; }
 
-/******************* GET *******************/
+int Edge::getLatency() { return latency; }
 
-int edge::getId(){
-	return id;
-}
+node *Edge::getSource() { return source; }
 
-int edge::getLatency(){
-	return latency;
-}
+node *Edge::getDestination() { return destination; }
 
-node* edge::getFrom(){
-	return from;
-}
+int Edge::getDistance() { return distance; }
 
-node* edge::getTo(){
-	return to;
-}
+void Edge::setDistance(int d) { distance = d; }
 
-int edge::getDistance(){
-	return distance;
-}
+void Edge::setSource(node *n) { source = n; }
 
-/******************* SET *******************/
+void Edge::setDestination(node *n) { destination = n; }
 
-void edge::setDistance(int d){
-	distance = d;
-}
-
-void edge::setFrom(node* n){
-	from = n;
-}
-
-void edge::setTo(node* n){
-	to = n;
-}
-
-void edge::setLatency(int lat){
-    latency = lat;
-}
+void Edge::setLatency(int lat) { latency = lat; }
