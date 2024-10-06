@@ -1190,14 +1190,14 @@ PreservedAnalyses CGRAExtractPass::run(Loop &L, LoopAnalysisManager &AM,
       addLiveIn(L.getBlocks()[0], g);
       addLiveOut(L.getBlocks()[0], g);
 
-      if (canDoIS)
-        instructionSelection(g);
+      //if (canDoIS)
+      //  instructionSelection(g);
 
       mkdir(directory.c_str(), 0777);
 
       g->printDot(filename);
-      g->printNodes(filename);
-      g->printEdges(filename);
+      //g->printNodes(filename);
+      g->printInstructionEdges(filename);
       delete g;
     }
   }

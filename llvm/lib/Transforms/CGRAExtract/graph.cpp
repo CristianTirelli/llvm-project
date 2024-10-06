@@ -110,7 +110,7 @@ std::vector<node *> graph::getPredecessors(node *n) {
 
 void graph::printDot(std::string filename) {
   std::ofstream dotFile;
-  std::string graphname = filename;
+  std::string graphname = "acc";
   filename.append("_loop_graph.dot");
   dotFile.open(filename.c_str());
   dotFile << "digraph " << graphname << " { \n{\n compound=true;";
@@ -270,7 +270,6 @@ void graph::printEdges(std::string filename) {
   dotFile.close();
 }
 
-
 void graph::removeNode(node *n) {
   // n should have only one pre
   if (getPredecessors(n).size() > 1) {
@@ -318,4 +317,24 @@ void graph::removeNode(node *n) {
   for (auto e : to_remove) {
     edges.erase(std::remove(edges.begin(), edges.end(), e), edges.end());
   }
+}
+
+void graph::printInstructionEdges(std::string filename) {
+  std::ofstream dotFile;
+  std::string graphname = filename;
+  filename.append("_edges");
+  dotFile.open(filename.c_str());
+
+  // print edges
+  for (size_t i = 0; i < edges.size(); i++) {
+    if (edges[i]->getSource()->getType() == nodeType::INSTRUCTION &&
+        edges[i]->getDestination()->getType() == nodeType::INSTRUCTION) {
+
+      dotFile << edges[i]->getSource()->getId() << " "
+              << edges[i]->getDestination()->getId() << " "
+              << edges[i]->getDistance() << "\n";
+    }
+  }
+
+  dotFile.close();
 }

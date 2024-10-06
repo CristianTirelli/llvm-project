@@ -48,6 +48,7 @@ public:
 
   /******************* PRINT *******************/
   void printDot(std::string filename);
+  void printInstructionEdges(std::string filename);
   void printNodes(std::string filename);
   void printEdges(std::string filename);
 };
