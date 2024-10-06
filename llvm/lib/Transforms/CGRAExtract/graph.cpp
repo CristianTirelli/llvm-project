@@ -110,7 +110,7 @@ std::vector<node *> graph::getPredecessors(node *n) {
 
 void graph::printDot(std::string filename) {
   std::ofstream dotFile;
-  std::string graphname = filename;
+  std::string graphname = "acc";
   filename.append("_loop_graph.dot");
   dotFile.open(filename.c_str());
   dotFile << "digraph " << graphname << " { \n{\n compound=true;";
@@ -269,7 +269,6 @@ void graph::printEdges(std::string filename) {
 
   dotFile.close();
 }
-
 
 void graph::removeNode(node *n) {
   // n should have only one pre
